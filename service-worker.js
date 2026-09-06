@@ -1,14 +1,37 @@
-const CACHE='scout-hub-v15-14-launch';
-const ASSETS=[
-  './','./index.html',
-  './css/style.css','./css/responsive.css','./css/animations.css',
-  './js/supabase-config.js','./js/supabase.js','./js/utils.js','./js/sound.js',
-  './js/session.js','./js/notifications.js','./js/realtime.js','./js/music.js',
-  './js/storage.js','./js/navigation.js','./js/auth.js','./js/members.js',
-  './js/activities.js','./js/games.js','./js/chat.js','./js/media.js',
-  './js/voice.js','./js/features.js','./js/settings.js','./js/translations.js',
-  './js/app.js','./js/calendar-real.js','./js/learning.js','./js/lessons-ui.js',
-  './manifest.json','./icons/icon-192.svg','./icons/icon-512.svg'
+const CACHE = 'scout-hub-v15-14-launch-v2';
+const ASSETS = [
+  './',
+  './index.html',
+  './style.css',
+  './responsive.css',
+  './animations.css',
+  './lesson-pagination.css',
+  './supabase-config.js',
+  './supabase.js',
+  './utils.js',
+  './sound.js',
+  './session.js',
+  './notifications.js',
+  './realtime.js',
+  './music.js',
+  './storage.js',
+  './navigation.js',
+  './auth.js',
+  './members.js',
+  './activities.js',
+  './games.js',
+  './chat.js',
+  './media.js',
+  './voice.js',
+  './features.js',
+  './settings.js',
+  './translations.js',
+  './app.js',
+  './calendar-real.js',
+  './learning.js',
+  './lessons-ui.js',
+  './lesson-pagination.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', e => {
@@ -67,12 +90,12 @@ self.addEventListener('fetch', e => {
       caches.match(e.request).then(cached => {
         if (cached) return cached;
         return fetch(e.request).then(response => {
-          if (response.ok) {
+          if (response && response.ok) {
             const copy = response.clone();
             caches.open(CACHE).then(c => c.put(e.request, copy));
           }
           return response;
-        });
+        }).catch(() => caches.match(e.request));
       })
     );
   }
