@@ -89,6 +89,16 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Safety shim: ensure optional globals exist to avoid ReferenceError at startup -->
+  <script>
+    window.Sound = window.Sound || {};
+    window.NotificationCenter = window.NotificationCenter || { banner: function(){}, init: function(){} };
+    window.ScoutMusic = window.ScoutMusic || {};
+    window.SessionManager = window.SessionManager || { init: function(){ return Promise.resolve(); } };
+    window.Realtime = window.Realtime || {};
+  </script>
+
   <script src="supabase-config.js"></script>
   <script src="supabase.js"></script>
   <script src="utils.js"></script>
