@@ -36,37 +36,74 @@
     </section>
 
     <section id="members" class="page">
-      <div class="page-header"><div><h1>👥 Manm</h1><p data-i18n="manageMembers">Jere manm gwoup la.</p></div><button class="primary-btn pressable" data-action="new-member">+ Nouvo</button></div>
+      <div class="page-header">
+        <div>
+          <h1>👥 Manm</h1>
+          <p data-i18n="manageMembers">Jere manm gwoup la.</p>
+        </div>
+        <button class="primary-btn pressable" data-action="new-member">+ Nouvo</button>
+      </div>
       <div id="membersList" class="list"></div>
     </section>
 
     <section id="activities" class="page">
-      <div class="page-header"><div><h1>📅 Aktivite</h1><p data-i18n="planActivities">Planifye aktivite Scout yo.</p></div><button class="primary-btn" data-action="new-activity">+ Nouvo</button></div>
+      <div class="page-header">
+        <div>
+          <h1>📅 Aktivite</h1>
+          <p data-i18n="planActivities">Planifye aktivite Scout yo.</p>
+        </div>
+        <button class="primary-btn" data-action="new-activity">+ Nouvo</button>
+      </div>
       <div id="activitiesList" class="list"></div>
     </section>
 
     <section id="games" class="page" aria-label="Jwèt Scout">
-      <div class="page-header"><div><h1>🎮 Jwèt</h1><p data-i18n="verifiedGames">Jwèt ak zouti Scout verifye.</p></div></div>
+      <div class="page-header">
+        <div>
+          <h1>🎮 Jwèt</h1>
+          <p data-i18n="verifiedGames">Jwèt ak zouti Scout verifye.</p>
+        </div>
+      </div>
       <div id="gamesList" class="list"></div>
     </section>
 
     <section id="music" class="page">
-      <div class="page-header"><div><h1>🎵 Scout Music</h1><p>Mizik Scout pre-enstale yo + mizik lokal ou chwazi yo, ak Loop ak kontwòl playback.</p></div></div>
+      <div class="page-header">
+        <div>
+          <h1>🎵 Scout Music</h1>
+          <p>Mizik Scout pre-enstale yo + mizik lokal ou chwazi yo, ak Loop ak kontwòl playback.</p>
+        </div>
+      </div>
       <div id="musicList" class="list"></div>
     </section>
 
     <section id="messages" class="page">
-      <div class="page-header"><div><h1>💬 Mesaj</h1><p id="chatSubtitle">Chwazi yon manm pou kòmanse.</p></div></div>
+      <div class="page-header">
+        <div>
+          <h1>💬 Mesaj</h1>
+          <p id="chatSubtitle">Chwazi yon manm pou kòmanse.</p>
+        </div>
+      </div>
       <div class="chat-layout"><aside id="conversations"></aside><section id="conversationView"></section></div>
     </section>
 
     <section id="more" class="page">
-      <div class="page-header"><div><h1>☰ Plis</h1><p data-i18n="allTools">Tout zouti SCOUT HUB yo.</p></div></div>
+      <div class="page-header">
+        <div>
+          <h1>☰ Plis</h1>
+          <p data-i18n="allTools">Tout zouti SCOUT HUB yo.</p>
+        </div>
+      </div>
       <div class="menu-list"><button data-action="badges">🏅 Badges</button><button data-action="tasks">📋 Tasks</button></div>
     </section>
 
     <section id="lessonsPage" class="page">
-      <div class="page-header"><div><h1>📚 Leson Scout</h1><p>Aprann, fè quiz, epi suiv pwogrè ou.</p></div></div>
+      <div class="page-header">
+        <div>
+          <h1>📚 Leson Scout</h1>
+          <p>Aprann, fè quiz, epi suiv pwogrè ou.</p>
+        </div>
+      </div>
       <div id="lessonList" class="list"></div>
       <div class="section-title">📡 Morse ak son</div>
       <div class="stat-card">
@@ -124,7 +161,30 @@
   <script src="learning.js"></script>
   <script src="lessons-ui.js"></script>
   <script>
-    window.addEventListener("load",()=>{setTimeout(()=>{document.body.classList.remove("scout-loading");document.getElementById("splash")?.classList.add("hidden");document.getElementById("main")?.focus();},500);});
+    window.addEventListener("load",()=>{
+      // hide splash after a short delay so CSS animations can complete
+      setTimeout(()=>{
+        document.body.classList.remove("scout-loading");
+        document.getElementById("splash")?.classList.add("hidden");
+        const main = document.getElementById("main");
+        if(main) main.classList.add('visible');
+      }, 450);
+
+      // Initialize app modules safely
+      (async ()=>{
+        try{
+          if(window.App?.init) await window.App.init();
+          else if(window.App) { try{ await window.App.init?.(); }catch(e){console.warn('App.init failed',e); } }
+        }catch(e){console.warn('Startup init error',e?.message||e); }
+
+        // register service worker if available and secure context
+        if('serviceWorker' in navigator){
+          try{
+            navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
+          }catch(e){/* ignore */}
+        }
+      })();
+    });
   </script>
   <script src="lesson-pagination.js"></script>
 
