@@ -40,6 +40,10 @@ const App = (() => {
     }
   }
 
+  function applyTheme() {
+    try { window.applyTheme?.(); } catch (e) { console.warn('applyTheme failed', e); }
+  }
+
   function firstLogin(user) {
     try {
       if (!user?.id) return;
@@ -74,7 +78,7 @@ const App = (() => {
   async function refresh() {
     try {
       // theme and i18n
-      try { window.applyTheme?.(); } catch (e) {}
+      try { applyTheme(); } catch (e) {}
       try { window.I18n?.apply?.(); } catch (e) {}
       // render modules if available (guarded)
       try { window.Members?.render?.(); } catch (e) {}
@@ -140,7 +144,8 @@ const App = (() => {
     modal,
     closeModal,
     firstLogin,
-    badgeCelebration
+    badgeCelebration,
+    applyTheme
   };
 })();
 
