@@ -1,0 +1,2 @@
+INSERT OR IGNORE INTO badges(name,description,criteria) VALUES ('Premye aktivite','Premye patisipasyon nan yon aktivite.','activity_participation >= 1'),('Skill Scout','Pwogrè konpetans rive 100%.','any_skill_progress = 100');
+INSERT OR IGNORE INTO skills(name,description) VALUES ('Camping','Baz kan'),('Orientation','Li kat ak oryantasyon'),('Knots','Nœuds Scout'),('Campcraft','Teknik kan'),('Nature','Obsèvasyon lanati'),('First Aid','Premye swen'),('Teamwork','Travay an ekip'),('Leadership','Lidèchip');

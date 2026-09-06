@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Scout Cyber Pulse • Long Mix",
+    "artist": "SCOUT HUB • Original",
+    "src": "./music/scout_cyber_pulse_long.wav",
+    "icon": "⚡",
+    "site": true,
+    "durationLabel": "3:00"
+  },
+  {
+    "name": "Scout Night Mission • Long Mix",
+    "artist": "SCOUT HUB • Original",
+    "src": "./music/scout_night_mission_long.wav",
+    "icon": "🌙",
+    "site": true,
+    "durationLabel": "3:00"
+  },
+  {
+    "name": "Fleur-de-Lis Drive • Long Mix",
+    "artist": "SCOUT HUB • Original",
+    "src": "./music/scout_fleur_de_lis_long.wav",
+    "icon": "⚜️",
+    "site": true,
+    "durationLabel": "3:00"
+  }
+]
