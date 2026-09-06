@@ -36,19 +36,35 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE);
+      // Try to fetch and add each asset individually so a missing file won't fail the whole install
+      await Promise.all(ASSETS.map(async (asset) => {
+        try {
+          const resp = await fetch(asset, {cache: 'no-store'});
+          if (resp && resp.ok) {
+            await cache.put(asset, resp.clone());
+          } else {
+            // skip assets that aren't available
+            console.warn('[SW] Asset not cached (not ok):', asset);
+          }
+        } catch (err) {
+          // network error or 404, skip this asset
+          console.warn('[SW] Asset fetch failed, skipping:', asset, err && err.message);
+        }
+      }));
+      await self.skipWaiting();
+    })()
   );
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+      await self.clients.claim();
+    })()
   );
 });
 
@@ -73,13 +89,20 @@ self.addEventListener('fetch', e => {
   // Network-first for navigations, with an offline app-shell fallback.
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', copy));
+      (async () => {
+        try {
+          const response = await fetch(e.request);
+          try {
+            const copy = response.clone();
+            const c = await caches.open(CACHE);
+            await c.put('./index.html', copy);
+          } catch (err) { /* ignore cache put errors */ }
           return response;
-        })
-        .catch(() => caches.match('./index.html'))
+        } catch (err) {
+          const cached = await caches.match('./index.html');
+          return cached || new Response('Offline', {status:503, statusText:'Offline'});
+        }
+      })()
     );
     return;
   }
@@ -87,16 +110,20 @@ self.addEventListener('fetch', e => {
   // Cache-first for local static assets only.
   if (sameOrigin) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
+      (async () => {
+        const cached = await caches.match(e.request);
         if (cached) return cached;
-        return fetch(e.request).then(response => {
+        try {
+          const response = await fetch(e.request);
           if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then(c => c.put(e.request, copy));
+            try { const c = await caches.open(CACHE); await c.put(e.request, response.clone()); } catch (err) { /* ignore */ }
           }
           return response;
-        }).catch(() => caches.match(e.request));
-      })
+        } catch (err) {
+          // fallback to cache match for the request
+          return await caches.match(e.request) || new Response('Offline', {status:503, statusText:'Offline'});
+        }
+      })()
     );
   }
 });
