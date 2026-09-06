@@ -1,20 +1,148 @@
-const App=(()=>{function modal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.remove('hidden');document.getElementById('modal').setAttribute('aria-hidden','false')}function closeModal(){document.getElementById('modal').classList.add('hidden');document.getElementById('modalBody').replaceChildren()}function applyTheme(){const s=StorageService.settings();document.body.classList.toggle('light',s.theme==='light');document.documentElement.style.setProperty('--user-accent',s.accent==='magenta'?'#ff4fd8':s.accent==='green'?'#62ff9a':'#35d9ff');document.documentElement.style.setProperty('--user-font-scale',String(s.fontScale||1));document.body.classList.toggle('reduced-custom-motion',s.animations===false);document.body.classList.toggle('compact-custom',s.quickCompact===true);document.getElementById('themeBtn').textContent=s.theme==='dark'?'☀️':'🌙'}function counters(){const d=StorageService.data();document.getElementById('memberCount').textContent=d.members.length;
-    document.getElementById('activityCount').textContent=d.activities.length;
-    document.getElementById('badgeCount').textContent=d.badges.length;
-    document.getElementById('taskCount').textContent=d.tasks.length}function refresh(){applyTheme();I18n.apply();Members.render();Activities.render();Games.init();Chat.renderConversations();counters();updateStatus()}async function updateStatus(){try{await StorageService.flush()}catch{}
-  let online=false;
-  if(window.SupabaseService?.configured()){try{await SupabaseService.health();online=true}catch{}}
-  document.getElementById('connectionStatus').textContent=online?'Online':I18n.t('offline');
-  document.getElementById('modeBadge').textContent=online?`🟢 ${I18n.t('online')}`:`🟠 ${I18n.t('offline').toUpperCase()}`;
-}
-function firstLogin(user){
-  if(!user?.id)return; const key=`scoutHub.firstLogin.${user.id}`; if(localStorage.getItem(key)==='1')return; localStorage.setItem(key,'1');
-  const box=document.createElement('div'); box.className='welcome-overlay'; box.innerHTML=`<div class="welcome-card"><div class="welcome-fleur">⚜️</div><div class="welcome-orbit">🧭</div><h1>Byenveni nan SCOUT HUB</h1><p>Kont ou konekte avèk siksè.</p><div class="welcome-sparkles">✦ ⚜ ✦ ⚜ ✦</div><button class="primary-btn">Kòmanse</button></div>`; document.body.appendChild(box); requestAnimationFrame(()=>box.classList.add('show')); box.querySelector('button').onclick=()=>{box.classList.remove('show');setTimeout(()=>box.remove(),450)}; setTimeout(()=>box.querySelector('button')?.click(),6500);
-}
-function badgeCelebration(b){const box=document.createElement('div');box.className='badge-celebration';box.innerHTML=`<div class="badge-burst">⚜️ ✦ ⚜️</div><div class="badge-card"><div class="badge-icon-big">${Utils.esc(b?.icon||'🏅')}</div><h2>Nouvo badge!</h2><strong>${Utils.esc(b?.title||b?.name||'Felisitasyon!')}</strong><p>Ou fè yon bèl pwogrè nan SCOUT HUB. 🥰</p><button class="primary-btn">Kontinye</button></div>`;document.body.appendChild(box);requestAnimationFrame(()=>box.classList.add('show'));box.querySelector('button').onclick=()=>{box.classList.remove('show');setTimeout(()=>box.remove(),420)};setTimeout(()=>box.querySelector('button')?.click(),7000);}
-async function init(){
-Sound?.init?.(); NotificationCenter?.init?.(); ScoutMusic?.init?.(); SessionManager?.init?.().then(()=>Realtime?.start?.()).catch(e=>console.warn('[SESSION]',e.message)); document.getElementById('notifyBtn')?.addEventListener('click',()=>NotificationCenter.inbox());document.getElementById('modalClose').onclick=closeModal;document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
-    try{await Auth.restore(); if(window.SupabaseService?.configured()) await StorageService.hydrate();}catch(e){console.warn('[SCOUT HUB] startup sync:',e.message)}
-    window.addEventListener('scout:session',e=>{updateStatus();firstLogin(e.detail?.user||Auth.get());if(e.detail?.user)Realtime?.start?.();});
-    window.addEventListener('scout:badge-earned',e=>badgeCelebration(e.detail||{}));
-    window.addEventListener('scout:announcement',e=>{if(document.visibilityState==='visible')NotificationCenter.banner(`📢 ${e.detail?.title||'Nouvel anons'}`,e.detail?.content||e.detail?.body||'Nouvo anons pou tout gwoup la.','📢','announcement');}); Navigation.init();Members.init();Activities.init();Games.init();Chat.init();Media.init();Voice.init();Features.init();Settings.init();applyTheme();I18n.apply();counters();updateStatus();firstLogin(Auth.get()); window.addEventListener('scout:realtime',()=>{try{counters();}catch{}}); window.addEventListener('online',async()=>{await StorageService.flush();await StorageService.hydrate();refresh();updateStatus();});window.addEventListener('offline',updateStatus)}return{init,modal,closeModal,applyTheme,counters,refresh}})();document.addEventListener('DOMContentLoaded',App.init);
+// app.js — safe initialization wrapper for SCOUT HUB
+const App = (() => {
+  // helper to safely get element text/content
+  const $ = id => document.getElementById(id);
+
+  function modal(html) {
+    const body = $('modalBody');
+    const modalEl = $('modal');
+    if (!body || !modalEl) return;
+    body.innerHTML = html || '';
+    modalEl.classList.remove('hidden');
+    try { modalEl.focus(); } catch (e) {}
+  }
+
+  function closeModal() {
+    const modalEl = $('modal');
+    if (!modalEl) return;
+    modalEl.classList.add('hidden');
+    const body = $('modalBody');
+    if (body) body.innerHTML = '';
+  }
+
+  async function updateStatus() {
+    try {
+      let online = false;
+      if (window.SupabaseService?.configured?.()) {
+        try { await SupabaseService.health(); online = true; } catch (e) { online = false; }
+      }
+      const connectionEl = $('connectionStatus');
+      if (connectionEl) connectionEl.textContent = online ? 'Online' : (window.I18n?.t?.('offline') || 'Offline');
+
+      const modeBadge = $('modeBadge');
+      if (modeBadge) {
+        const onlineText = window.I18n?.t?.('online') || 'online';
+        const offlineText = (window.I18n?.t?.('offline') || 'offline').toUpperCase();
+        modeBadge.textContent = online ? `🟢 ${onlineText}` : `🟠 ${offlineText}`;
+      }
+    } catch (err) {
+      console.warn('[App] updateStatus failed', err);
+    }
+  }
+
+  function firstLogin(user) {
+    try {
+      if (!user?.id) return;
+      const key = `scoutHub.firstLogin.${user.id}`;
+      if (localStorage.getItem(key) === '1') return;
+      localStorage.setItem(key, '1');
+      const box = document.createElement('div');
+      box.className = 'welcome-overlay';
+      box.innerHTML = `
+        <div class="welcome-card">
+          <div class="welcome-fleur">⚜️</div>
+          <div class="welcome-orbit">🧭</div>
+          <h1>Byenveni!</h1>
+          <p>Mèsi paske w enskri nan SCOUT HUB.</p>
+          <button id="welcomeClose" class="primary-btn">Kontinye</button>
+        </div>`;
+      document.body.appendChild(box);
+      box.querySelector('#welcomeClose')?.addEventListener('click', () => box.remove());
+    } catch (e) { console.warn('[App] firstLogin', e); }
+  }
+
+  function badgeCelebration(b) {
+    try {
+      const box = document.createElement('div');
+      box.className = 'badge-celebration';
+      box.innerHTML = `<div class="badge-burst">⚜️ ✦ ⚜️</div><div class="badge-card"><div class="badge-icon">${b.icon||'🏅'}</div><div class="badge-title">${b.title||'Bravo!'}</div></div>`;
+      document.body.appendChild(box);
+      setTimeout(() => box.remove(), 3800);
+    } catch (e) { console.warn('[App] badgeCelebration', e); }
+  }
+
+  async function refresh() {
+    try {
+      // theme and i18n
+      try { window.applyTheme?.(); } catch (e) {}
+      try { window.I18n?.apply?.(); } catch (e) {}
+      // render modules if available (guarded)
+      try { window.Members?.render?.(); } catch (e) {}
+      try { window.Activities?.render?.(); } catch (e) {}
+      try { window.Games?.init?.(); } catch (e) {}
+      try { window.Chat?.renderConversations?.(); } catch (e) {}
+      // update counters if present
+      try {
+        const memberCount = $('memberCount');
+        if (memberCount && window.Members?.count != null) memberCount.textContent = String(window.Members.count);
+      } catch (e) {}
+      // status
+      await updateStatus();
+    } catch (e) {
+      console.warn('[App] refresh error', e);
+    }
+  }
+
+  async function init() {
+    // Safely init optional modules (do not throw if missing)
+    try { window.Sound?.init?.(); } catch (e) { console.warn('Sound.init failed', e); }
+    try { window.NotificationCenter?.init?.(); } catch (e) {}
+    try { window.ScoutMusic?.init?.(); } catch (e) {}
+    // SessionManager may be async but might not exist
+    try {
+      await (window.SessionManager?.init?.() || Promise.resolve());
+      try { window.Realtime?.start?.(); } catch (e) {}
+    } catch (e) { console.warn('[SESSION]', e?.message || e); }
+
+    // Restore auth and storage but don't block UI if they fail
+    try {
+      await Auth?.restore?.();
+    } catch (e) { console.warn('[Auth.restore]', e); }
+    try {
+      if (window.SupabaseService?.configured?.()) {
+        await StorageService?.hydrate?.();
+      }
+    } catch (e) { console.warn('[Storage.hydrate]', e); }
+
+    // wire up events
+    try {
+      window.addEventListener('scout:session', e => {
+        updateStatus();
+        firstLogin(e?.detail?.user || Auth.get?.());
+        if (e?.detail?.user) window.Realtime?.start?.();
+      });
+      window.addEventListener('scout:badge-earned', e => badgeCelebration(e?.detail || {}));
+      window.addEventListener('scout:announcement', e => {
+        if (document.visibilityState === 'visible') {
+          try { NotificationCenter?.banner?.(`📢 ${e.detail?.title || 'Nouvel anons'}`, e.detail?.content || e.detail?.body || ''); } catch (er) {}
+        }
+      });
+    } catch (e) { console.warn('[App] event binding failed', e); }
+
+    // initial refresh
+    try { await refresh(); } catch (e) {}
+  }
+
+  // small API for other modules
+  return {
+    init,
+    refresh,
+    modal,
+    closeModal,
+    firstLogin,
+    badgeCelebration
+  };
+})();
+
+// expose globally
+if (typeof window !== 'undefined') window.App = App;
